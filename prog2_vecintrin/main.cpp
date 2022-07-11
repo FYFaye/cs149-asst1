@@ -249,7 +249,43 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
   // Your solution should work for any value of
   // N and VECTOR_WIDTH, not just when VECTOR_WIDTH divides N
   //
-  
+  __cs149_mask maskAll, maskZero, maskNotZero;
+
+
+  maskAll = _cs149_init_ones();
+
+  __cs149_vec_float res, xTmp;
+  __cs149_vec_int exp;
+  __cs149_vec_float zeroFloat = _cs149_vset_float(0.f), 
+  clampFloat = _cs149_vset_float(9.999999f), oneFloat =  _cs149_vset_float(1.0f);
+
+  __cs149_vec_int zeroInt = _cs149_vset_int(0), oneInt = _cs149_vset_int(1);
+
+  for (int i=0; i<N; i+=VECTOR_WIDTH) {
+    if (i + VECTOR_WIDTH > N)
+      i = N - VECTOR_WIDTH;
+    _cs149_vload_float(res, values + i, maskAll);
+    _cs149_vload_float(xTmp, values + i, maskAll);
+    _cs149_vload_int(exp, exponents+ i, maskAll);
+
+
+    _cs149_veq_int(maskZero, exp, zeroInt, maskAll);
+    _cs149_vadd_float(res, zeroFloat, oneFloat, maskZero);
+    
+    maskNotZero = _cs149_mask_not(maskZero);
+    _cs149_vsub_int(exp, exp, oneInt, maskNotZero);
+    while (_cs149_cntbits(maskNotZero)){
+      _cs149_vlt_int(maskNotZero, zeroInt, exp, maskNotZero);
+      _cs149_vmult_float(res, res, xTmp, maskNotZero);
+      _cs149_vsub_int(exp, exp, oneInt, maskNotZero);
+    }
+    _cs149_vlt_float(maskZero, res, clampFloat, maskAll);
+    _cs149_vstore_float(output+i, res, maskZero);
+    maskNotZero = _cs149_mask_not(maskZero);
+    _cs149_vstore_float(output+i, clampFloat, maskNotZero);
+
+
+  }
 }
 
 // returns the sum of all elements in values
@@ -270,11 +306,21 @@ float arraySumVector(float* values, int N) {
   //
   // CS149 STUDENTS TODO: Implement your vectorized version of arraySumSerial here
   //
-  
+  float res = 0.0f;
+  __cs149_mask maskAll = _cs149_init_ones();
+  __cs149_vec_float tmp;
   for (int i=0; i<N; i+=VECTOR_WIDTH) {
-
+    //_cs149_hadd_float
+    int n = VECTOR_WIDTH;
+    _cs149_vload_float(tmp, values + i, maskAll);
+    while (n > 1){
+      _cs149_hadd_float(tmp, tmp);
+      _cs149_interleave_float(tmp, tmp);
+      n /= 2;
+    }
+    res += tmp.value[0];
   }
 
-  return 0.0;
+  return res;
 }
 

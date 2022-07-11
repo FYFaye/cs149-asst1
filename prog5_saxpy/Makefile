@@ -1,4 +1,4 @@
-CXX=g++ -m64
+CXX=g++ -m64 -g
 CXXFLAGS=-I../common -Iobjs/ -O2 -Wall 
 ISPC=ispc
 # note: requires AVX2

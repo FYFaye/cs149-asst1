@@ -22,6 +22,14 @@ extern void mandelbrotSerial(
     int maxIterations,
     int output[]);
 
+extern void mandelbrotSampleSerial(
+    float x0, float y0, float x1, float y1,
+    int width, int height,
+    int threadId, int threadNum,
+    int maxIterations,
+    int output[]);
+
+#define METHODE2
 
 //
 // workerThreadStart --
@@ -35,7 +43,31 @@ void workerThreadStart(WorkerArgs * const args) {
     // program that uses two threads, thread 0 could compute the top
     // half of the image and thread 1 could compute the bottom half.
 
-    printf("Hello world from thread %d\n", args->threadId);
+
+#ifdef METHODE1    
+    int gap = args->height / args->numThreads;
+    int start = args->threadId * gap;
+    // last thread must finish all pixel
+    if (args->threadId == args->numThreads - 1){
+        gap = args->height - start;
+    }
+    double startTime = CycleTimer::currentSeconds();
+    mandelbrotSerial(args->x0, args->y0, args->x1, args->y1, 
+    args->width, args->height, start, gap, args->maxIterations, args->output);
+    double endTime = CycleTimer::currentSeconds();
+    double minThread = endTime - startTime;
+    printf("thread %d,\t\t[%.3f] ms\n", args->threadId, minThread * 1000);
+#endif 
+
+#ifdef METHODE2
+    double startTime = CycleTimer::currentSeconds();
+    mandelbrotSampleSerial(args->x0, args->y0, args->x1, args->y1, 
+    args->width, args->height, args->threadId, args->numThreads, args->maxIterations, args->output);
+    double endTime = CycleTimer::currentSeconds();
+    double minThread = endTime - startTime;
+    printf("thread %d,\t\t[%.3f] ms\n", args->threadId, minThread * 1000);
+#endif 
+    //printf("Hello world from thread %d\n", args->threadId);
 }
 
 //
